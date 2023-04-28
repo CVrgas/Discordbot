@@ -3,13 +3,11 @@ const {
 	AudioPlayerStatus,
 	createAudioResource,
 	getVoiceConnection,
+	joinVoiceChannel,
 } = require("@discordjs/voice");
 const SlashCommand = require("../../utils/SlashCommand");
 const { SlashCommandBuilder } = require("discord.js");
-const ytdl = require("ytdl-core");
-const ytpl = require("ytpl");
-const ytlist = require("youtube-playlist");
-const { songPlayer, playlistPlayer } = require("../../utils/player");
+const play = require("play-dl");
 
 module.exports = class PlayCommand extends SlashCommand {
 	constructor() {
@@ -17,41 +15,76 @@ module.exports = class PlayCommand extends SlashCommand {
 	}
 
 	async run(client, interation) {
-		// necesito desinstalar ytpl
+		const url = interation.options.get("url").value;
+		const link_type = play.yt_validate(url);
 
-		try {
-			let url = interation.options.get("url").value;
-			let validar = await ytdl.validateURL(url);
-			if (!validar) {
-				return interation.reply("no valida");
-			}
-
-			let songData = await ytdl.getInfo(url);
-			let song = {
-				tittle: songData.videoDetails.title,
-				url: songData.videoDetails.video_url,
-			};
-			let connection = getVoiceConnection(interation.guild.id);
-			if (!connection) {
-				return interation.reply(" Not connection");
-			}
-
-			const stream = await ytdl(url, {
-				filter: "audioonly",
-				quality: "lowestaudio",
+		// connection
+		if (!getVoiceConnection(interation.guild.id)) {
+			const connection = joinVoiceChannel({
+				channelId: interation.member.voice.channel.id,
+				guildId: interation.guild.id,
+				adapterCreator: interation.guild.voiceAdapterCreator,
 			});
-			const resourse = await createAudioResource(stream);
-			let player = createAudioPlayer();
-			let dispatcher = connection.subscribe(player);
-			player.play(resourse);
-			interation.reply(`now playing: ${url}`);
-
-			player.on("error", (error) => {
-				console.log("Error reproduciendo", error);
-			});
-		} catch (err) {
-			console.log(err);
 		}
+
+		//player
+		const player = createAudioPlayer();
+
+		//subcribe
+		const subcribe = getVoiceConnection(interation.guild.id).subscribe(player);
+
+		//create resource
+		let source = null;
+		let resource = null;
+		switch (link_type) {
+			// case link is a video => play video audio.
+			
+			case "video":
+				source = await play.stream(url);
+				resource = createAudioResource(source.stream, {
+					inputType: source.type,
+				});
+				player.play(resource);
+				break;
+
+			//case link is a playlist  => create queue then play queue.
+			case "playlist":
+				const playlist = await play.playlist_info(url);
+				client.queue = (await playlist.all_videos()).reverse();
+				source = await play.stream(client.queue.pop().url);
+				resource = await createAudioResource(source.stream, {
+					inputType: source.type,
+				});
+				player.play(resource);
+				break;
+
+			//case link is a search => not implemented yet.
+			case "search":
+				console.log("no implemented search");
+				break;
+			
+			// something else
+			default:
+				console.log("no valid ");
+				break;
+		}
+
+		//case player stop playing first song, play next if there is one.
+		player.on(AudioPlayerStatus.Idle, async () => {
+			if (client.queue.lenght <= 0) {
+				return;
+			}
+			let source = await play.stream(client.queue.pop().url);
+			let resource = createAudioResource(source.stream, {
+				inputType: source.type,
+			});
+
+			player.play(resource);
+		});
+
+		player.on("error", (error) => {
+			console.log("Error reproduciendo", error);
+		});
 	}
 
 	getSlashCommandJSON() {

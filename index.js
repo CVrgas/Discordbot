@@ -70,7 +70,6 @@ bot.on("ready", () => {
 
 bot.on("messageCreate", (message) => {
 	if (message.author.bot) return;
-	message.reply(`Eco: `, message);
 });
 
 main();
