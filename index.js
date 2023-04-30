@@ -7,6 +7,8 @@ const {
 	Routes,
 	Collection,
 	ChannelType,
+	EmbedBuilder,
+	MessageComponentInteraction,
 } = require("discord.js");
 const {
 	createAudioResource,
@@ -67,9 +69,11 @@ bot.on("interactionCreate", (interaction) => {
 bot.on("ready", () => {
 	console.log("bot ready");
 });
-
 bot.on("messageCreate", (message) => {
 	if (message.author.bot) return;
+	
 });
+
+
 
 main();
