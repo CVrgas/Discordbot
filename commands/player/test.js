@@ -16,12 +16,10 @@ module.exports = class PlayCommand extends SlashCommand {
 		super("test");
 	}
 	async run(client, interation) {
-		let embed = new EmbedBuilder().setTitle("Created");
-		interation.reply({ embeds: [embed] });
+		interation.reply({ content: "Recived", ephemeral: true });
 		setTimeout(() => {
-			embed = new EmbedBuilder().setTitle("changed");
-			interation.editReply({ embeds: [embed] });
-		}, 1000);
+			interation.editReply({ content: "Recived second", ephemeral: true });
+		}, 5000);
 	}
 
 	getSlashCommandJSON() {

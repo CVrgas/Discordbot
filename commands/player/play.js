@@ -1,43 +1,31 @@
-const {
-	createAudioPlayer,
-	AudioPlayerStatus,
-	createAudioResource,
-	getVoiceConnection,
-	joinVoiceChannel,
-} = require("@discordjs/voice");
+const { AudioPlayerStatus, createAudioResource } = require("@discordjs/voice");
 const SlashCommand = require("../../utils/SlashCommand");
 const { SlashCommandBuilder } = require("discord.js");
-const { createEmbed } = require("../../utils/embed");
+const {
+	createEmbed,
+	setEmbeds,
+	getNextEmbed,
+	setNextEmbed,
+} = require("../../utils/embed");
 const play = require("play-dl");
+const {
+	initAudioPlayer,
+	AudioPlayer_play,
+	getPlayer,
+} = require("../../utils/AudioPlayer");
 
 module.exports = class PlayCommand extends SlashCommand {
 	constructor() {
 		super("play");
 	}
 
-	async run(client, interation) {
-		const url = interation.options.get("url").value;
+	async run(client, interaction) {
+		const url = interaction.options.get("url").value;
 		const link_type = play.yt_validate(url);
 
-		// connection
-		if (!getVoiceConnection(interation.guild.id)) {
-			const connection = joinVoiceChannel({
-				channelId: interation.member.voice.channel.id,
-				guildId: interation.guild.id,
-				adapterCreator: interation.guild.voiceAdapterCreator,
-			});
-		}
+		initAudioPlayer(interaction);
+		const player = getPlayer();
 
-		//player
-		const player = createAudioPlayer();
-
-		//subcribe
-		const subcribe = getVoiceConnection(interation.guild.id).subscribe(player);
-
-		//create resource
-		let source = null;
-		let resource = null;
-		let embedResponse = null;
 		try {
 			switch (link_type) {
 				// case link is a video => play video audio.
@@ -49,8 +37,9 @@ module.exports = class PlayCommand extends SlashCommand {
 					});
 
 					play.video_basic_info(url, { htmldata: false }).then((response) => {
-						interation.reply({
+						interaction.reply({
 							embeds: [createEmbed(response.video_details)],
+							flags: 12,
 						});
 					});
 
@@ -60,18 +49,26 @@ module.exports = class PlayCommand extends SlashCommand {
 				//case link is a playlist  => create queue then play queue.
 				case "playlist":
 					const playlist = await play.playlist_info(url);
+
 					client.queue = (await playlist.all_videos()).reverse();
+
+					setEmbeds(client.queue);
 					const video = client.queue.pop();
+
 					source = await play.stream(video.url);
+
 					resource = await createAudioResource(source.stream, {
 						inputType: source.type,
 					});
+
 					embedResponse = await createEmbed(video);
-					console.log(video);
-					interation.reply({
-						embeds: [embedResponse],
+
+					interaction.reply({
+						embeds: [getNextEmbed()],
+						options: [],
 					});
-					player.play(resource);
+
+					AudioPlayer_play(resource);
 					break;
 
 				//case link is a search => not implemented yet.
@@ -90,28 +87,35 @@ module.exports = class PlayCommand extends SlashCommand {
 
 		//case player stop playing first song, play next if there is one.
 		player.on(AudioPlayerStatus.Idle, async () => {
+			// close if bot doesnt have a queue
 			if (!client.queue) {
 				return;
 			}
+
+			// close if theres no item in queue
 			if (client.queue.lenght <= 0) {
+				interaction.deleteReply();
 				return;
 			}
-			let x = client.queue.pop();
-			let source = await play.stream(x.url);
+
+			// prepare next song
+			setNextEmbed();
+			let NextSong = client.queue.pop();
+
+			let source = await play.stream(NextSong.url);
 			let resource = createAudioResource(source.stream, {
 				inputType: source.type,
 			});
-			interation.editReply({ embeds: [createEmbed(x)] });
-			// let embedResponse = await createEmbed(x).then((response) => {
-			// 	interation.editReply({
-			// 		embeds: [response],
-			// 	});
-			// });
-			player.play(resource);
-		});
 
-		player.on("error", (error) => {
-			console.log("Error reproduciendo", error);
+			//reply with embeds
+			try {
+				interaction.editReply({ embeds: [getNextEmbed()] });
+			} catch (error) {
+				console.log("Error with interation reply");
+			}
+
+			//play song
+			AudioPlayer_play(resource);
 		});
 	}
 
@@ -120,7 +124,7 @@ module.exports = class PlayCommand extends SlashCommand {
 			.setName(this.name)
 			.setDescription("play command")
 			.addStringOption((option) =>
-				option.setName("url").setDescription("url of video").setRequired(true)
+				option.setName("url").setDescription("video url").setRequired(true)
 			)
 			.toJSON();
 	}

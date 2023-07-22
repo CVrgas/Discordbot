@@ -9,15 +9,9 @@ const {
 	ChannelType,
 	EmbedBuilder,
 	MessageComponentInteraction,
+	Options,
 } = require("discord.js");
-const {
-	createAudioResource,
-	NoSubscriberBehavior,
-	VoiceConnectionStatus,
-	AudioPlayerStatus,
-	createAudioPlayer,
-	joinVoiceChannel,
-} = require("@discordjs/voice");
+
 const { TOKEN, CHANNEL_ID, GUILD_ID, APP_ID } = process.env;
 const { registerCommands } = require("./utils/registry");
 
@@ -71,9 +65,6 @@ bot.on("ready", () => {
 });
 bot.on("messageCreate", (message) => {
 	if (message.author.bot) return;
-	
 });
-
-
 
 main();
