@@ -1,6 +1,6 @@
 const { SlashCommandBuilder, ChannelType } = require("discord.js");
 const { joinVoiceChannel } = require("@discordjs/voice");
-const { TOKEN, CHANNEL_ID, GUILD_ID, APP_ID } = process.env;
+// const { TOKEN, CHANNEL_ID, GUILD_ID, APP_ID } = process.env;
 const SlashCommand = require("../utils/SlashCommand");
 
 function connect(interation) {

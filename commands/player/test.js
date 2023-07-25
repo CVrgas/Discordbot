@@ -16,9 +16,10 @@ module.exports = class PlayCommand extends SlashCommand {
 		super("test");
 	}
 	async run(client, interation) {
-		interation.reply({ content: "Recived", ephemeral: true });
-		setTimeout(() => {
-			interation.editReply({ content: "Recived second", ephemeral: true });
+		let response = await interation.channel.send("hello");
+		// await response.reply("replying");
+		setTimeout(async () => {
+			await response.edit("edited");
 		}, 5000);
 	}
 

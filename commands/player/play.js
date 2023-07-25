@@ -1,17 +1,23 @@
-const { AudioPlayerStatus, createAudioResource } = require("@discordjs/voice");
+const {
+	getVoiceConnection,
+	joinVoiceChannel,
+	AudioPlayerStatus,
+	createAudioResource,
+	createAudioPlayer,
+} = require("@discordjs/voice");
 const SlashCommand = require("../../utils/SlashCommand");
 const { SlashCommandBuilder } = require("discord.js");
 const {
 	createEmbed,
-	setEmbeds,
+	SetEmbedData,
 	getNextEmbed,
-	setNextEmbed,
 } = require("../../utils/embed");
 const play = require("play-dl");
 const {
-	initAudioPlayer,
 	AudioPlayer_play,
 	getPlayer,
+	listen_Iddle,
+	playSigle,
 } = require("../../utils/AudioPlayer");
 
 module.exports = class PlayCommand extends SlashCommand {
@@ -20,103 +26,87 @@ module.exports = class PlayCommand extends SlashCommand {
 	}
 
 	async run(client, interaction) {
+		await interaction.deferReply();
 		const url = interaction.options.get("url").value;
 		const link_type = play.yt_validate(url);
+		const connection = getVoiceConnection(interaction.guild.id);
 
-		initAudioPlayer(interaction);
+		if (!connection) {
+			if (interaction.member?.voice?.channel?.id) {
+				const connection = joinVoiceChannel({
+					channelId: interaction.member.voice.channel.id,
+					guildId: interaction.guild.id,
+					adapterCreator: interaction.guild.voiceAdapterCreator,
+				});
+			} else {
+				await interaction.editReply({
+					content: "U need to be in a channel",
+					ephemeral: true,
+					SuppressNotifications: true,
+				});
+				return;
+			}
+		}
+
 		const player = getPlayer();
 
 		try {
 			switch (link_type) {
 				// case link is a video => play video audio.
-
 				case "video":
-					source = await play.stream(url);
-					resource = createAudioResource(source.stream, {
-						inputType: source.type,
-					});
-
-					play.video_basic_info(url, { htmldata: false }).then((response) => {
-						interaction.reply({
-							embeds: [createEmbed(response.video_details)],
-							flags: 12,
-						});
-					});
-
-					player.play(resource);
+					playSigle(url);
+					getVoiceConnection(interaction.guild.id).subscribe(player);
+					await interaction.editReply(`Playing now...\n${url}`);
 					break;
 
 				//case link is a playlist  => create queue then play queue.
 				case "playlist":
 					const playlist = await play.playlist_info(url);
-
 					client.queue = (await playlist.all_videos()).reverse();
-
-					setEmbeds(client.queue);
+					SetEmbedData(client.queue);
 					const video = client.queue.pop();
 
-					source = await play.stream(video.url);
+					await interaction.editReply("playing");
+					setTimeout(async () => {
+						await interaction.deleteReply();
+					}, 10000);
 
-					resource = await createAudioResource(source.stream, {
-						inputType: source.type,
-					});
-
-					embedResponse = await createEmbed(video);
-
-					interaction.reply({
+					const response = await interaction.channel.send({
 						embeds: [getNextEmbed()],
+						SuppressNotifications: true,
 						options: [],
 					});
-
+					const source = await play.stream(url);
+					const resource = await createAudioResource(source.stream, {
+						inputType: source.type,
+					});
 					AudioPlayer_play(resource);
+					listen_Iddle(client, interaction, response);
+					getVoiceConnection(interaction.guild.id).subscribe(player);
 					break;
 
 				//case link is a search => not implemented yet.
 				case "search":
-					console.log("no implemented search");
+					await interaction.editReply({
+						content: "no implemented search",
+						ephemeral: true,
+					});
+					console.log("search not implemented ");
 					break;
 
 				// something else
 				default:
+					await interaction.editReply({
+						content: "no valid",
+						ephemeral: true,
+					});
 					console.log("no valid ");
 					break;
 			}
 		} catch (error) {
+			// console.log("Error dectecting url type");
 			console.log(error);
 		}
-
-		//case player stop playing first song, play next if there is one.
-		player.on(AudioPlayerStatus.Idle, async () => {
-			// close if bot doesnt have a queue
-			if (!client.queue) {
-				return;
-			}
-
-			// close if theres no item in queue
-			if (client.queue.lenght <= 0) {
-				interaction.deleteReply();
-				return;
-			}
-
-			// prepare next song
-			setNextEmbed();
-			let NextSong = client.queue.pop();
-
-			let source = await play.stream(NextSong.url);
-			let resource = createAudioResource(source.stream, {
-				inputType: source.type,
-			});
-
-			//reply with embeds
-			try {
-				interaction.editReply({ embeds: [getNextEmbed()] });
-			} catch (error) {
-				console.log("Error with interation reply");
-			}
-
-			//play song
-			AudioPlayer_play(resource);
-		});
 	}
 
 	getSlashCommandJSON() {

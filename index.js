@@ -29,18 +29,22 @@ bot.rest.setToken(TOKEN);
 async function main() {
 	try {
 		bot.slashCommand = new Collection();
+
 		await registerCommands(bot, "../commands");
-		// console.log(bot.slashCommand);
+
+
 		const slashCommandsJson = bot.slashCommand.map((cmd) =>
 			cmd.getSlashCommandJSON()
 		);
+		
 		await bot.rest.put(Routes.applicationGuildCommands(APP_ID, GUILD_ID), {
 			body: slashCommandsJson,
 		});
+
 		const registeredSlashCommands = await bot.rest.get(
 			Routes.applicationGuildCommands(APP_ID, GUILD_ID)
 		);
-		// console.log (registeredSlashCommands)
+
 		await bot.login(TOKEN);
 	} catch (err) {
 		console.log(err);
@@ -54,6 +58,7 @@ bot.on("interactionCreate", (interaction) => {
 		if (cmd) {
 			cmd.run(bot, interaction);
 		} else {
+			
 			interaction.reply("command has no run method");
 		}
 	}

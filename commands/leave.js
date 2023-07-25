@@ -17,7 +17,7 @@ module.exports = class LeaveCommand extends SlashCommand {
 	getSlashCommandJSON() {
 		return new SlashCommandBuilder()
 			.setName(this.name)
-			.setDescription("leave command")
+			.setDescription("Leave command")
 			.toJSON();
 	}
 };

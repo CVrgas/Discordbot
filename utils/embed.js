@@ -41,14 +41,20 @@ function setNextEmbed() {
 		console.log("error creating now/next embed");
 	}
 }
-function setEmbeds(playlist) {
+function SetEmbedData(playlist) {
 	videolist = playlist;
 	setNextEmbed();
 }
-
+function InfoEmbed(title, description) {
+	const InfoEmbed = new EmbedBuilder()
+		.setColor([255, 255, 255])
+		.setTitle(title)
+		.setDescription(`${description}`);
+}
 module.exports = {
 	createEmbed,
-	setEmbeds,
+	SetEmbedData,
 	setNextEmbed,
 	getNextEmbed,
+	InfoEmbed,
 };
