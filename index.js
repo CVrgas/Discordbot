@@ -50,7 +50,6 @@ async function main() {
 		console.log(err);
 	}
 }
-
 bot.on("interactionCreate", (interaction) => {
 	if (interaction.isChatInputCommand()) {
 		const { commandName } = interaction;

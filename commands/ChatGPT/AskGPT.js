@@ -3,7 +3,7 @@ const { SlashCommandBuilder } = require("discord.js");
 
 module.exports = class PlayCommand extends SlashCommand {
 	constructor() {
-		super("Ask");
+		super("ask");
 	}
 	async run(client, interation) {
 		interation.reply("Recived");

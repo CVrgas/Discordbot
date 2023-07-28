@@ -1,24 +1,9 @@
-const {
-	getVoiceConnection,
-	joinVoiceChannel,
-	AudioPlayerStatus,
-	createAudioResource,
-	createAudioPlayer,
-} = require("@discordjs/voice");
 const SlashCommand = require("../../utils/SlashCommand");
 const { SlashCommandBuilder } = require("discord.js");
-const {
-	createEmbed,
-	SetEmbedData,
-	getNextEmbed,
-} = require("../../utils/embed");
-const play = require("play-dl");
-const {
-	AudioPlayer_play,
-	getPlayer,
-	listen_Iddle,
-	playSigle,
-} = require("../../utils/AudioPlayer");
+const { playListEmbed } = require("../../utils/embed");
+const CandyPlayer = require("../../Models/player");
+const PlaylistEmbed = require("../../Models/currrentPlayingEmbed");
+const { AudioPlayerStatus } = require("@discordjs/voice");
 
 module.exports = class PlayCommand extends SlashCommand {
 	constructor() {
@@ -26,86 +11,48 @@ module.exports = class PlayCommand extends SlashCommand {
 	}
 
 	async run(client, interaction) {
-		await interaction.deferReply();
-		const url = interaction.options.get("url").value;
-		const link_type = play.yt_validate(url);
-		const connection = getVoiceConnection(interaction.guild.id);
-
-		if (!connection) {
-			if (interaction.member?.voice?.channel?.id) {
-				const connection = joinVoiceChannel({
-					channelId: interaction.member.voice.channel.id,
-					guildId: interaction.guild.id,
-					adapterCreator: interaction.guild.voiceAdapterCreator,
-				});
-			} else {
-				await interaction.editReply({
-					content: "U need to be in a channel",
-					ephemeral: true,
-					SuppressNotifications: true,
-				});
+		interaction.deferReply();
+		try {
+			//get url trying to play
+			const urlOption = interaction.options.get("url");
+			if (!urlOption) {
+				await interaction.reply("Missing required 'url' option.");
 				return;
 			}
-		}
+			const url = urlOption.value;
 
-		const player = getPlayer();
-
-		try {
-			switch (link_type) {
-				// case link is a video => play video audio.
-				case "video":
-					playSigle(url);
-					getVoiceConnection(interaction.guild.id).subscribe(player);
-					await interaction.editReply(`Playing now...\n${url}`);
-					break;
-
-				//case link is a playlist  => create queue then play queue.
-				case "playlist":
-					const playlist = await play.playlist_info(url);
-					client.queue = (await playlist.all_videos()).reverse();
-					SetEmbedData(client.queue);
-					const video = client.queue.pop();
-
-					await interaction.editReply("playing");
-					setTimeout(async () => {
-						await interaction.deleteReply();
-					}, 10000);
-
-					const response = await interaction.channel.send({
-						embeds: [getNextEmbed()],
-						SuppressNotifications: true,
-						options: [],
-					});
-					const source = await play.stream(url);
-					const resource = await createAudioResource(source.stream, {
-						inputType: source.type,
-					});
-					AudioPlayer_play(resource);
-					listen_Iddle(client, interaction, response);
-					getVoiceConnection(interaction.guild.id).subscribe(player);
-					break;
-
-				//case link is a search => not implemented yet.
-				case "search":
-					await interaction.editReply({
-						content: "no implemented search",
-						ephemeral: true,
-					});
-					console.log("search not implemented ");
-					break;
-
-				// something else
-				default:
-					await interaction.editReply({
-						content: "no valid",
-						ephemeral: true,
-					});
-					console.log("no valid ");
-					break;
+			//if client doesnt has a audioPlayer create one
+			if (!client.audioPlayer) {
+				client.audioPlayer = new CandyPlayer();
 			}
+
+			// add song to queue and then play it
+			const response = await client.audioPlayer.addSong(url);
+			await client.audioPlayer.playSong(interaction);
+
+			await client.audioPlayer.addListeners();
+
+			let sentEmbed = null;
+			await client.audioPlayer.InternalPlayer.on(
+				AudioPlayerStatus.Playing,
+				async () => {
+					if (sentEmbed === null) {
+						sentEmbed = await interaction.channel.send({
+							embeds: [await client.audioPlayer.embedResponse.getResponse()],
+						});
+						return;
+					} else {
+						const message = await sentEmbed;
+						sentEmbed.edit({
+							embeds: [await client.audioPlayer.embedResponse.getResponse()],
+						});
+					}
+				}
+			);
+			interaction.editReply("playing...");
 		} catch (error) {
-			// console.log("Error dectecting url type");
-			console.log(error);
+			console.error("Error Running play command: ", error);
+			interaction.editReply("An error occurred while processing the command.");
 		}
 	}
 

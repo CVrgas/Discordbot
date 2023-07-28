@@ -7,14 +7,20 @@ const {
 const SlashCommand = require("../../utils/SlashCommand");
 const { SlashCommandBuilder } = require("discord.js");
 
-module.exports = class PlayCommand extends SlashCommand {
+module.exports = class PauseCommand extends SlashCommand {
 	constructor() {
 		super("pause");
 	}
-	async run(client, interation) {
-		const connection = await getVoiceConnection(interation.guild.id);
-		connection.state.subscription.player.pause();
-		interation.reply("Paused");
+	async run(client, interaction) {
+		await interaction.deferReply();
+		client.audioPlayer.pauseSong();
+		await interaction.editReply({
+			content: "Paused",
+			ephemeral: true,
+		});
+		setTimeout(() => {
+			interaction.deleteReply();
+		}, 5000);
 	}
 
 	getSlashCommandJSON() {

@@ -3,19 +3,20 @@ const { SlashCommandBuilder } = require("discord.js");
 
 const { getVoiceConnection } = require("@discordjs/voice");
 
-module.exports = class StopCommand extends SlashCommand {
+module.exports = class PreviousCommand extends SlashCommand {
 	constructor() {
-		super("stop");
+		super("previous");
 	}
+
 	async run(client, interaction) {
 		await interaction.deferReply();
-		client.audioPlayer.stopSong();
 
+		// Logic to play the previous song
+		client.audioPlayer.previousSong();
 		await interaction.editReply({
-			content: "Player Closed",
+			content: "Playing the previous song",
 			ephemeral: true,
 		});
-
 		setTimeout(() => {
 			interaction.deleteReply();
 		}, 5000);
@@ -24,7 +25,7 @@ module.exports = class StopCommand extends SlashCommand {
 	getSlashCommandJSON() {
 		return new SlashCommandBuilder()
 			.setName(this.name)
-			.setDescription("stop command")
+			.setDescription("Play the previous song")
 			.toJSON();
 	}
 };

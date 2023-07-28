@@ -51,10 +51,23 @@ function InfoEmbed(title, description) {
 		.setTitle(title)
 		.setDescription(`${description}`);
 }
+function playListEmbed(EmbedInfo) {
+	const embed = new EmbedBuilder()
+		.setColor("Random")
+		.setTitle("Now Playing")
+		.setDescription(EmbedInfo.current.title)
+		.setImage(EmbedInfo.current.thumbnail)
+		.addFields({
+			name: "Next song:",
+			value: EmbedInfo.next.title,
+		});
+	return embed;
+}
 module.exports = {
 	createEmbed,
 	SetEmbedData,
 	setNextEmbed,
 	getNextEmbed,
 	InfoEmbed,
+	playListEmbed,
 };

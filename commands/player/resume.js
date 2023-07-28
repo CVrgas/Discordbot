@@ -7,15 +7,17 @@ const {
 const SlashCommand = require("../../utils/SlashCommand");
 const { SlashCommandBuilder } = require("discord.js");
 
-
-module.exports = class PlayCommand extends SlashCommand {
+module.exports = class ResumeCommand extends SlashCommand {
 	constructor() {
 		super("resume");
 	}
 	async run(client, interation) {
-		const connection = await getVoiceConnection(interation.guild.id);
-		connection.state.subscription.player.unpause();
-		interation.reply("resuming");
+		await interation.deferReply();
+		client.audioPlayer.resumeSong();
+		interation.editReply("Resuming");
+		setTimeout(() => {
+			interation.deleteReply();
+		}, 5000);
 	}
 
 	getSlashCommandJSON() {
