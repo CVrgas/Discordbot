@@ -1,8 +1,6 @@
 const SlashCommand = require("../../utils/SlashCommand");
 const { SlashCommandBuilder } = require("discord.js");
 
-const { getVoiceConnection } = require("@discordjs/voice");
-
 module.exports = class AddCommand extends SlashCommand {
 	constructor() {
 		super("add");
@@ -20,13 +18,20 @@ module.exports = class AddCommand extends SlashCommand {
 
 		try {
 			await client.audioPlayer.addSong(url);
+			await interaction.editReply({
+				content: `song added to Queue`,
+				ephemeral: true,
+			});
 		} catch (error) {
+			await interaction.editReply({
+				content: `Error adding song`,
+				ephemeral: true,
+			});
 			console.log("error adding song:", error.message);
 		}
-		await interaction.editReply({
-			content: "Playing the previous song",
-			ephemeral: true,
-		});
+		setTimeout(() => {
+			interaction.deleteReply();
+		}, 5000);
 	}
 
 	getSlashCommandJSON() {

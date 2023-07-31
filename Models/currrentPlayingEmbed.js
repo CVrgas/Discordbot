@@ -1,6 +1,6 @@
-const { EmbedBuilder } = require("discord.js");
+const { EmbedBuilder, ButtonBuilder } = require("discord.js");
 
-module.exports = class currentPlayingEmbed {
+module.exports = class CurrentPlayingEmbed  {
 	constructor() {
 		this._embed;
 	}

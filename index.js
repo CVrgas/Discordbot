@@ -61,6 +61,37 @@ bot.on("interactionCreate", (interaction) => {
 			interaction.reply("command has no run method");
 		}
 	}
+	if(interaction.isButton()){
+		const player = bot.audioPlayer
+		if(!player){
+			return;
+		}
+		switch(interaction.customId){
+			case 'next':
+				player.nextSong();
+				interaction.reply('playing next');
+				break;
+			case 'previous':
+				player.previousSong();
+				interaction.reply('playing previous');
+				break;
+			case 'pausePlay':
+				if(player.status === 'playing'){
+					player.pauseSong();
+					interaction.reply('paused');
+				}else{
+					player.resumeSong()
+					interaction.reply('playing');
+				}
+				break;
+			default:
+				break;
+		}
+		setTimeout(()=>{
+			interaction.deleteReply();
+		}, 2000)
+		
+	}
 });
 
 // log "ready" when bot is ready

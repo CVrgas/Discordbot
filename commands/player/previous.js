@@ -1,8 +1,6 @@
 const SlashCommand = require("../../utils/SlashCommand");
 const { SlashCommandBuilder } = require("discord.js");
 
-const { getVoiceConnection } = require("@discordjs/voice");
-
 module.exports = class PreviousCommand extends SlashCommand {
 	constructor() {
 		super("previous");
@@ -11,12 +9,20 @@ module.exports = class PreviousCommand extends SlashCommand {
 	async run(client, interaction) {
 		await interaction.deferReply();
 
-		// Logic to play the previous song
-		client.audioPlayer.previousSong();
-		await interaction.editReply({
-			content: "Playing the previous song",
-			ephemeral: true,
-		});
+		try {
+			// Logic to play the previous song
+			client.audioPlayer.previousSong();
+			await interaction.editReply({
+				content: "Playing the previous song",
+				ephemeral: true,
+			});
+		} catch (error) {
+			console.log("error while trying to play previous song:", error.message);
+			await interaction.editReply({
+				content: "error while trying to play previous song",
+				ephemeral: true,
+			});
+		}
 		setTimeout(() => {
 			interaction.deleteReply();
 		}, 5000);

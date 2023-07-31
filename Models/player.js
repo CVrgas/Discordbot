@@ -1,5 +1,4 @@
 const play = require("play-dl");
-const playdl = require("play-dl");
 const {
 	getVoiceConnection,
 	joinVoiceChannel,
@@ -7,8 +6,7 @@ const {
 	createAudioPlayer,
 	AudioPlayerStatus,
 } = require("@discordjs/voice");
-const { playListEmbed } = require("../utils/embed");
-const currentPlayingEmbed = require("./currrentPlayingEmbed");
+const CurrentPlayingEmbed = require("./currrentPlayingEmbed");
 
 module.exports = class CandyPlayer {
 	constructor() {
@@ -16,9 +14,8 @@ module.exports = class CandyPlayer {
 		this.currentSong = 0;
 		this.nextSongIndex = this.currentSong + 1;
 		this.InternalPlayer = createAudioPlayer();
-		this.currentGuild = "";
-		this.embedResponse = new currentPlayingEmbed();
-		this.isListening = false;
+		this.currentGuild;
+		this.embedResponse = new CurrentPlayingEmbed();
 		this.status = null;
 	}
 	async addSong(url) {
@@ -39,8 +36,7 @@ module.exports = class CandyPlayer {
 		}
 	}
 	async nextSong() {
-		if (this.currentSong === this.queue.length - 1) {
-			this.end = true;
+		if (this.currentSong >= this.queue.length - 1) {
 			return;
 		}
 		this.currentSong++;
@@ -90,10 +86,7 @@ module.exports = class CandyPlayer {
 
 		getVoiceConnection(i.guild.id).subscribe(this.InternalPlayer);
 
-		if (!this.isListening) {
-			this.addListeners();
-			this.embedResponse.setResponse(this.get_Current_Next());
-		}
+		this.embedResponse.setResponse(this.get_Current_Next());
 		this.status = "playing";
 	}
 	get_Current_Next() {
@@ -110,25 +103,22 @@ module.exports = class CandyPlayer {
 		this.InternalPlayer.stop();
 		this.queue = [];
 	}
-	addListeners() {
-		this.InternalPlayer.on("error", async (error) => {
-			console.log("Error playing audio");
-			if (sentMessage) {
-				await sentMessage.edit("Error playing audio");
-			}
-		});
+	async replaceQueue(url) {
+		switch (play.yt_validate(url)) {
+			case "playlist":
+				let dataList = await getListData(url);
+				this.queue = [...dataList];
+				break;
 
-		this.InternalPlayer.on(AudioPlayerStatus.Idle, async () => {
-			if (
-				this.currentSong === this.queue.length - 1 ||
-				this.status === "paused"
-			) {
-				return;
-			}
-			this.nextSong();
-		});
+			case "video":
+				const data = await getVideoData(url);
+				this.queue = [data];
+				break;
 
-		this.isListening = true;
+			default:
+				console.log("none");
+				break;
+		}
 	}
 };
 
@@ -145,7 +135,7 @@ async function getVideoData(url) {
 }
 
 async function getListData(url) {
-	const playlist_info = await playdl.playlist_info(url);
+	const playlist_info = await play.playlist_info(url);
 	const dataList = playlist_info.videos.map((video) => {
 		return {
 			url: video.url,

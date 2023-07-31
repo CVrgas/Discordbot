@@ -1,8 +1,6 @@
 const SlashCommand = require("../../utils/SlashCommand");
-const { SlashCommandBuilder } = require("discord.js");
-const { playListEmbed } = require("../../utils/embed");
+const { SlashCommandBuilder, ActionRow, ActionRowBuilder, ButtonStyle, ButtonBuilder } = require("discord.js");
 const CandyPlayer = require("../../Models/player");
-const PlaylistEmbed = require("../../Models/currrentPlayingEmbed");
 const { AudioPlayerStatus } = require("@discordjs/voice");
 
 module.exports = class PlayCommand extends SlashCommand {
@@ -27,28 +25,55 @@ module.exports = class PlayCommand extends SlashCommand {
 			}
 
 			// add song to queue and then play it
-			const response = await client.audioPlayer.addSong(url);
+			// await client.audioPlayer.addSong(url);
+			await client.audioPlayer.replaceQueue(url);
 			await client.audioPlayer.playSong(interaction);
-
-			await client.audioPlayer.addListeners();
-
+			
+			const player = client.audioPlayer.InternalPlayer
 			let sentEmbed = null;
+			
 			await client.audioPlayer.InternalPlayer.on(
 				AudioPlayerStatus.Playing,
 				async () => {
 					if (sentEmbed === null) {
+						const next = new ButtonBuilder().setCustomId('next').setEmoji('▶').setStyle(ButtonStyle.Primary);
+						const pausePlay = new ButtonBuilder().setCustomId('pausePlay').setEmoji('⏯').setStyle(ButtonStyle.Primary);
+						const previous = new ButtonBuilder().setCustomId('previous').setEmoji('◀').setStyle(ButtonStyle.Secondary).setDisabled(true);
+						const row = new ActionRowBuilder().addComponents(previous, pausePlay, next)
+
 						sentEmbed = await interaction.channel.send({
 							embeds: [await client.audioPlayer.embedResponse.getResponse()],
+							components: [row],
+							
 						});
 						return;
 					} else {
+						
+						const next = new ButtonBuilder().setCustomId('next').setEmoji('▶').setStyle(ButtonStyle.Primary);
+						const pausePlay = new ButtonBuilder().setCustomId('pausePlay').setEmoji('⏯').setStyle(ButtonStyle.Primary);
+						const previous = new ButtonBuilder().setCustomId('previous').setEmoji('◀').setStyle(ButtonStyle.Primary).setDisabled(false);
+						const row = new ActionRowBuilder().addComponents(previous, pausePlay, next)
 						const message = await sentEmbed;
 						sentEmbed.edit({
 							embeds: [await client.audioPlayer.embedResponse.getResponse()],
+							components: [row],
 						});
 					}
 				}
 			);
+			this.InternalPlayer.on("error", async (error) => {
+				console.log("Error playing audio: ", error.message);
+			});
+			this.InternalPlayer.on(AudioPlayerStatus.Idle, async () => {
+
+				if (
+					player.currentSong === player.queue.length - 1 ||
+					player.status === "paused"
+				) {
+					return;
+				}
+				player.nextSong();
+			});
 			interaction.editReply("playing...");
 		} catch (error) {
 			console.error("Error Running play command: ", error);

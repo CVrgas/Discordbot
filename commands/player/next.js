@@ -1,8 +1,6 @@
 const SlashCommand = require("../../utils/SlashCommand");
 const { SlashCommandBuilder } = require("discord.js");
 
-const { getVoiceConnection } = require("@discordjs/voice");
-
 module.exports = class NextCommand extends SlashCommand {
 	constructor() {
 		super("next");
@@ -11,13 +9,21 @@ module.exports = class NextCommand extends SlashCommand {
 	async run(client, interaction) {
 		await interaction.deferReply();
 
-		// Logic to play the next song
-		client.audioPlayer.nextSong();
+		try {
+			// Logic to play the next song
+			client.audioPlayer.nextSong();
 
-		await interaction.editReply({
-			content: "Playing the next song",
-			ephemeral: true,
-		});
+			await interaction.editReply({
+				content: "Playing the next song",
+				ephemeral: true,
+			});
+		} catch (error) {
+			await interaction.editReply({
+				content: "error while trying to play next song",
+				ephemeral: true,
+			});
+			console.log(`Error Playing next song:`, error.message);
+		}
 		setTimeout(() => {
 			interaction.deleteReply();
 		}, 5000);

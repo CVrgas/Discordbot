@@ -1,9 +1,3 @@
-const {
-	createAudioPlayer,
-	AudioPlayerStatus,
-	createAudioResource,
-	getVoiceConnection,
-} = require("@discordjs/voice");
 const SlashCommand = require("../../utils/SlashCommand");
 const { SlashCommandBuilder } = require("discord.js");
 
@@ -13,8 +7,16 @@ module.exports = class ResumeCommand extends SlashCommand {
 	}
 	async run(client, interation) {
 		await interation.deferReply();
-		client.audioPlayer.resumeSong();
-		interation.editReply("Resuming");
+		try {
+			client.audioPlayer.resumeSong();
+			interation.editReply("Resuming");
+		} catch (error) {
+			console.log("error while trying to resume song:", error.message);
+			interation.editReply({
+				content: "error while trying to resume song",
+				ephemeral: true,
+			});
+		}
 		setTimeout(() => {
 			interation.deleteReply();
 		}, 5000);

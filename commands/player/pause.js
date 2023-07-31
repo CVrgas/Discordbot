@@ -1,9 +1,3 @@
-const {
-	createAudioPlayer,
-	AudioPlayerStatus,
-	createAudioResource,
-	getVoiceConnection,
-} = require("@discordjs/voice");
 const SlashCommand = require("../../utils/SlashCommand");
 const { SlashCommandBuilder } = require("discord.js");
 
@@ -13,11 +7,19 @@ module.exports = class PauseCommand extends SlashCommand {
 	}
 	async run(client, interaction) {
 		await interaction.deferReply();
-		client.audioPlayer.pauseSong();
-		await interaction.editReply({
-			content: "Paused",
-			ephemeral: true,
-		});
+		try {
+			client.audioPlayer.pauseSong();
+			await interaction.editReply({
+				content: "Paused",
+				ephemeral: true,
+			});
+		} catch (error) {
+			console.log("error while trying to pause song: ", error.message);
+			await interaction.editReply({
+				content: "error while trying to pause song",
+				ephemeral: true,
+			});
+		}
 		setTimeout(() => {
 			interaction.deleteReply();
 		}, 5000);
