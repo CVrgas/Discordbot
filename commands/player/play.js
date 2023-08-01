@@ -31,14 +31,14 @@ module.exports = class PlayCommand extends SlashCommand {
 			
 			const player = client.audioPlayer.InternalPlayer
 			let sentEmbed = null;
-			
-			await client.audioPlayer.InternalPlayer.on(
+
+			await player.on(
 				AudioPlayerStatus.Playing,
 				async () => {
 					if (sentEmbed === null) {
 						const next = new ButtonBuilder().setCustomId('next').setEmoji('▶').setStyle(ButtonStyle.Primary);
 						const pausePlay = new ButtonBuilder().setCustomId('pausePlay').setEmoji('⏯').setStyle(ButtonStyle.Primary);
-						const previous = new ButtonBuilder().setCustomId('previous').setEmoji('◀').setStyle(ButtonStyle.Secondary).setDisabled(true);
+						const previous = new ButtonBuilder().setCustomId('previous').setEmoji('◀').setStyle(ButtonStyle.Secondary).setDisabled(true );
 						const row = new ActionRowBuilder().addComponents(previous, pausePlay, next)
 
 						sentEmbed = await interaction.channel.send({
@@ -61,10 +61,10 @@ module.exports = class PlayCommand extends SlashCommand {
 					}
 				}
 			);
-			this.InternalPlayer.on("error", async (error) => {
+			player.on("error", async (error) => {
 				console.log("Error playing audio: ", error.message);
 			});
-			this.InternalPlayer.on(AudioPlayerStatus.Idle, async () => {
+			player.on(AudioPlayerStatus.Idle, async () => {
 
 				if (
 					player.currentSong === player.queue.length - 1 ||
