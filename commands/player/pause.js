@@ -6,23 +6,26 @@ module.exports = class PauseCommand extends SlashCommand {
 		super("pause");
 	}
 	async run(client, interaction) {
-		await interaction.deferReply();
+		// await interaction.deferReply();
 		try {
-			client.audioPlayer.pauseSong();
-			await interaction.editReply({
-				content: "Paused",
-				ephemeral: true,
-			});
+			if (client.YoutubeAudioPlayer) {
+				console.log("Attempting: Pause");
+				client.YoutubeAudioPlayer.Pause();
+			}
+			// await interaction.editReply({
+			// 	content: "Paused",
+			// 	ephemeral: true,
+			// });
 		} catch (error) {
 			console.log("error while trying to pause song: ", error.message);
-			await interaction.editReply({
-				content: "error while trying to pause song",
-				ephemeral: true,
-			});
+			// await interaction.editReply({
+			// 	content: "error while trying to pause song",
+			// 	ephemeral: true,
+			// });
 		}
-		setTimeout(() => {
-			interaction.deleteReply();
-		}, 5000);
+		// setTimeout(() => {
+		// 	interaction.deleteReply();
+		// }, 5000);
 	}
 
 	getSlashCommandJSON() {

@@ -7,25 +7,25 @@ module.exports = class PreviousCommand extends SlashCommand {
 	}
 
 	async run(client, interaction) {
-		await interaction.deferReply();
+		// await interaction.deferReply();
 
 		try {
 			// Logic to play the previous song
-			client.audioPlayer.previousSong();
-			await interaction.editReply({
-				content: "Playing the previous song",
-				ephemeral: true,
-			});
+			client.YoutubeAudioPlayer.PlayPrev();
+			// await interaction.editReply({
+			// 	content: "Playing the previous song",
+			// 	ephemeral: true,
+			// });
 		} catch (error) {
 			console.log("error while trying to play previous song:", error.message);
-			await interaction.editReply({
-				content: "error while trying to play previous song",
-				ephemeral: true,
-			});
+			// await interaction.editReply({
+			// 	content: "error while trying to play previous song",
+			// 	ephemeral: true,
+			// });
 		}
-		setTimeout(() => {
-			interaction.deleteReply();
-		}, 5000);
+		// setTimeout(() => {
+		// 	interaction.deleteReply();
+		// }, 5000);
 	}
 
 	getSlashCommandJSON() {
